@@ -7,10 +7,41 @@ import {
   TouchableOpacity,
   Alert,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import Consistants from "../config/config";
+import Axios from "axios";
 
 const LoginScreen = ({ navigation }) => {
-  const onPressLogin = () => {
-    navigation.navigate("Employee");
+  const BASE_URL = Consistants.REACT_APP_BASE_URL;
+
+  const onPressLogin = async (e) => {
+    e.preventDefault();
+    if (!state.email && !state.password) return;
+    try {
+      let data = {
+        password: state.password,
+        email: state.email,
+        device_name: "just_a_phone",
+      };
+
+      const response = await Axios({
+        method: "post",
+        url: `${BASE_URL}/login`,
+        data: data,
+      });
+      await AsyncStorage.setItem("access_token", response.data.token);
+      // reset the form values in the state
+      resetState();
+      navigation.navigate("Qrcode");
+    } catch (error) {
+      Alert.alert("Incorrect username or password");
+    }
+  };
+  const resetState = () => {
+    setState({
+      email: "",
+      password: "",
+    });
   };
   const onPressForgotPassword = () => {
     Alert.alert("Reset password");
@@ -29,8 +60,7 @@ const LoginScreen = ({ navigation }) => {
         <TextInput
           style={styles.inputText}
           placeholder="Email"
-          placeholderTextColor="#003f5c"
-          onChangeText={(text) => setState({ email: text })}
+          onChangeText={(text) => setState({ ...state, email: text })}
         />
       </View>
       <View style={styles.inputView}>
@@ -38,8 +68,7 @@ const LoginScreen = ({ navigation }) => {
           style={styles.inputText}
           secureTextEntry
           placeholder="Password"
-          placeholderTextColor="#003f5c"
-          onChangeText={(text) => setState({ password: text })}
+          onChangeText={(text) => setState({ ...state, password: text })}
         />
       </View>
       <TouchableOpacity onPress={onPressForgotPassword}>
@@ -48,9 +77,9 @@ const LoginScreen = ({ navigation }) => {
       <TouchableOpacity onPress={onPressLogin} style={styles.loginBtn}>
         <Text style={styles.loginText}>Login </Text>
       </TouchableOpacity>
-      <TouchableOpacity onPress={onPressSignUp}>
+      {/* <TouchableOpacity onPress={onPressSignUp}>
         <Text style={styles.forgotAndSignUpText}>Signup</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </View>
   );
 };

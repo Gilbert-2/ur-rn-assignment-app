@@ -4,11 +4,11 @@ import { Text, View, StyleSheet, TouchableOpacity } from "react-native";
 export default function WelcomeScreen({ navigation }) {
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Management portal</Text>
+      <Text style={styles.text}>Access point</Text>
 
-      <TouchableOpacity onPress={() => navigation.navigate("Signup")}>
+      {/* <TouchableOpacity onPress={() => navigation.navigate("Signup")}>
         <Text style={styles.signup}>Sign up</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
       <TouchableOpacity onPress={() => navigation.navigate("Login")}>
         <Text style={styles.login}>Login</Text>
       </TouchableOpacity>
@@ -44,6 +44,6 @@ const styles = StyleSheet.create({
     marginLeft: "11%",
     padding: "2%",
     fontSize: 20,
-    marginTop: "10%",
+    marginTop: "40%",
   },
 });

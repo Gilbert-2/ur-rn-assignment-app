@@ -1,10 +1,11 @@
+// import "react-native-gesture-handler";
 import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import LoginScreen from "./screens/Login";
 import WelcomeScreen from "./screens/Welcome";
-import SignupScreen from "./screens/Signup";
+// import SignupScreen from "./screens/Signup";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import IndexScreen from "./screens/EmployeeIndex";
+import IndexScreen from "./screens/QrcodeIndex";
 const Stack = createNativeStackNavigator();
 
 export default function App() {
@@ -18,8 +19,8 @@ export default function App() {
       >
         <Stack.Screen name="Home" component={WelcomeScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Signup" component={SignupScreen} />
-        <Stack.Screen name="Employee" component={IndexScreen} />
+        {/* <Stack.Screen name="Signup" component={SignupScreen} /> */}
+        <Stack.Screen name="Qrcode" component={IndexScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

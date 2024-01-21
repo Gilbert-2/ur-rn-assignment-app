@@ -10,30 +10,35 @@ import {
 } from "react-native";
 
 import Consistants from "../config/config";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import Axios from "axios";
 
-const ListEmployeeScreen = () => {
+const ListQrcodeScreen = () => {
   const BASE_URL = Consistants.REACT_APP_BASE_URL;
-  const [employeesList, setEmployeesList] = useState([]);
+  const [qrcodesList, setQrcodesList] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectItem, setSelectedItem] = useState({});
   _viewDetails = (itemId) => {
-    setSelectedItem(employeesList.find(({ id }) => id == itemId));
+    setSelectedItem(qrcodesList.find(({ id }) => id == itemId));
     setModalVisible(true);
   };
-  _getEmployees = async () => {
+  _getQrcodes = async () => {
     try {
       const response = await Axios({
         method: "get",
-        url: `${BASE_URL}/employees`,
+        url: `${BASE_URL}/qrcodes`,
+        headers: {
+          Authorization: `Bearer ${await AsyncStorage.getItem("access_token")}`,
+        },
       });
-      setEmployeesList(response.data.employees);
+      setQrcodesList(response.data.qrcodes);
     } catch (error) {
-      Alert.alert("Failed to fetch employees list");
+      console.log(error);
+      Alert.alert("Failed to fetch qrcodes list");
     }
   };
   useEffect(() => {
-    _getEmployees();
+    _getQrcodes();
   }, []);
   return (
     <View style={styles.container}>
@@ -49,13 +54,15 @@ const ListEmployeeScreen = () => {
         <View style={styles.centeredView}>
           <View style={styles.modalView}>
             <View>
-              <Text style={styles.modalText}>Name : {selectItem.name}</Text>
-              <Text style={styles.modalText}>Email : {selectItem.email}</Text>
               <Text style={styles.modalText}>
-                Phone number : {selectItem.tel}
+                Plate number : {selectItem.plate_number}
+              </Text>
+              <Text style={styles.modalText}>Status : {selectItem.status}</Text>
+              <Text style={styles.modalText}>
+                Station : {selectItem.station_id}
               </Text>
               <Text style={styles.modalText}>
-                Address : {selectItem.address}
+                Date : {selectItem.created_at}
               </Text>
             </View>
             <Pressable
@@ -74,16 +81,20 @@ const ListEmployeeScreen = () => {
           padding: 20,
         }}
       >
-        List of all employees
+        Active qrcodes
       </Text>
       <FlatList
-        data={employeesList}
+        data={qrcodesList}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <Pressable onPress={() => _viewDetails(item.id)}>
-            <Text style={styles.item}>{item.name}</Text>
-          </Pressable>
-        )}
+        renderItem={({ item }) => {
+          if (item.status == "VALID") {
+            return (
+              <Pressable onPress={() => _viewDetails(item.id)}>
+                <Text style={styles.item}>{item.plate_number}</Text>
+              </Pressable>
+            );
+          }
+        }}
       />
     </View>
   );
@@ -140,4 +151,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ListEmployeeScreen;
+export default ListQrcodeScreen;
