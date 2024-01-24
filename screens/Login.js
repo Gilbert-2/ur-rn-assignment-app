@@ -46,9 +46,7 @@ const LoginScreen = ({ navigation }) => {
   const onPressForgotPassword = () => {
     Alert.alert("Reset password");
   };
-  const onPressSignUp = () => {
-    navigation.navigate("Signup");
-  };
+
   const [state, setState] = useState({
     email: "",
     password: "",
@@ -77,9 +75,6 @@ const LoginScreen = ({ navigation }) => {
       <TouchableOpacity onPress={onPressLogin} style={styles.loginBtn}>
         <Text style={styles.loginText}>Login </Text>
       </TouchableOpacity>
-      {/* <TouchableOpacity onPress={onPressSignUp}>
-        <Text style={styles.forgotAndSignUpText}>Signup</Text>
-      </TouchableOpacity> */}
     </View>
   );
 };
@@ -105,7 +100,7 @@ const styles = StyleSheet.create({
   },
   inputText: {
     height: 50,
-    color: "white",
+    color: "black",
     borderBottomWidth: 1,
   },
   forgotAndSignUpText: {

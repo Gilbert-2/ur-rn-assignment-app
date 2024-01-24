@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   StyleSheet,
   Text,
@@ -11,18 +11,133 @@ import QRCode from "react-native-qrcode-svg";
 import Consistants from "../config/config";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Axios from "axios";
+import { SelectList } from "react-native-dropdown-select-list";
+import * as Notifications from "expo-notifications";
+import * as Device from "expo-device";
+import Constants from "expo-constants";
 
-const QrcodeScreen = () => {
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+  }),
+});
+Notifications.scheduleNotificationAsync({
+  content: {
+    title: "Payment request",
+    body: "Show the qrcode to the attendant",
+  },
+  trigger: null,
+});
+
+async function registerForPushNotificationsAsync() {
+  let token;
+
+  if (Platform.OS === "android") {
+    await Notifications.setNotificationChannelAsync("default", {
+      name: "default",
+      importance: Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: "#FF231F7C",
+    });
+  }
+
+  if (Device.isDevice) {
+    const { status: existingStatus } =
+      await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+    if (existingStatus !== "granted") {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+    if (finalStatus !== "granted") {
+      alert("Failed to get push token for push notification!");
+      return;
+    }
+    // Learn more about projectId:
+    // https://docs.expo.dev/push-notifications/push-notifications-setup/#configure-projectid
+    token = (
+      await Notifications.getExpoPushTokenAsync({
+        projectId: Constants.expoConfig.extra.eas.projectId,
+      })
+    ).data;
+    console.log(token);
+  } else {
+    alert("Must use physical device for Push Notifications");
+  }
+
+  return token;
+}
+
+const QrcodeScreen = ({ navigation }) => {
+  async function sendPushNotification(expoPushToken) {
+    const message = {
+      to: expoPushToken,
+      sound: "default",
+      title: "Original Title",
+      body: "And here is the body!",
+      data: { someData: "goes here" },
+    };
+
+    await fetch("https://exp.host/--/api/v2/push/send", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Accept-encoding": "gzip, deflate",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(message),
+    });
+  }
+  const [selected, setSelected] = React.useState("");
+
+  const data = [
+    { key: "1", value: "SP" },
+    { key: "2", value: "Meru" },
+    { key: "3", value: "Engine" },
+    { key: "4", value: "OXY" },
+    { key: "5", value: "Descentre" },
+    { key: "6", value: "Merez" },
+  ];
+
   const BASE_URL = Consistants.REACT_APP_BASE_URL;
   const [qrcode, setQrcode] = useState("");
   const [state, setState] = useState({
     station_id: "",
     amount: "",
   });
+  const [expoPushToken, setExpoPushToken] = useState("");
+  const [notification, setNotification] = useState(false);
+  const notificationListener = useRef();
+  const responseListener = useRef();
+
+  useEffect(() => {
+    registerForPushNotificationsAsync().then((token) =>
+      setExpoPushToken(token)
+    );
+
+    notificationListener.current =
+      Notifications.addNotificationReceivedListener((notification) => {
+        setNotification(notification);
+      });
+
+    responseListener.current =
+      Notifications.addNotificationResponseReceivedListener((response) => {
+        console.log(response);
+      });
+
+    return () => {
+      Notifications.removeNotificationSubscription(
+        notificationListener.current
+      );
+      Notifications.removeNotificationSubscription(responseListener.current);
+    };
+  }, []);
   _saveQrcode = async () => {
     try {
       let data = {
-        station_id: state.station_id,
+        station_id: selected ?? 1,
         amount: state.amount,
       };
       const response = await Axios({
@@ -35,6 +150,7 @@ const QrcodeScreen = () => {
       });
       setQrcode(response.data.data.qrcode);
       resetState();
+      await sendPushNotification(expoPushToken);
     } catch (error) {
       Alert.alert("Failed to generate qrcode");
     }
@@ -46,8 +162,12 @@ const QrcodeScreen = () => {
     });
   };
   useEffect(() => {
-    setQrcode("");
-  }, []);
+    const unsubscribe = navigation.addListener("focus", () => {
+      setQrcode("");
+    });
+    return unsubscribe;
+  }, [navigation]);
+
   return (
     <>
       {qrcode ? (
@@ -57,15 +177,14 @@ const QrcodeScreen = () => {
         </View>
       ) : (
         <View style={styles.container}>
-          <View style={styles.inputView}>
-            <TextInput
-              style={styles.inputText}
-              placeholder="Station id"
-              value={state.station_id}
-              placeholderTextColor="#003f5c"
-              onChangeText={(text) => setState({ ...state, station_id: text })}
-            />
-          </View>
+          <SelectList
+            setSelected={(val) => setSelected(val)}
+            data={data}
+            save="key"
+            boxStyles={styles.inputSelect}
+          />
+          <View style={styles.inputView}></View>
+
           <View style={styles.inputView}>
             <TextInput
               style={styles.inputText}
@@ -75,6 +194,7 @@ const QrcodeScreen = () => {
               onChangeText={(text) => setState({ ...state, amount: text })}
             />
           </View>
+
           <TouchableOpacity onPress={_saveQrcode} style={styles.loginBtn}>
             <Text style={styles.loginText}>Generate qrcode </Text>
           </TouchableOpacity>
@@ -102,6 +222,15 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     justifyContent: "center",
     padding: 20,
+  },
+  inputSelect: {
+    width: "80%",
+    borderTopWidth: 0,
+    borderRightWidth: 0,
+    borderLeftWidth: 0,
+    borderRadius: 0,
+    height: 50,
+    justifyContent: "center",
   },
   inputText: {
     height: 50,
