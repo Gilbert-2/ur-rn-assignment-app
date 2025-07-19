@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 import ListQrcodes from "./ListQrcodes";
 import QRCodeScanner from "./QrcodeScannerScreen";
+import AccountScreen from "./AccountScreen";
 const Tab = createBottomTabNavigator();
 export default function Index({ route }) {
   return (
@@ -14,7 +15,7 @@ export default function Index({ route }) {
     >
       <Tab.Screen
         name="Settings"
-        component={QrcodeScreen}
+        component={AccountScreen}
         options={{
           tabBarLabel: "Account",
           tabBarIcon: ({ color }) => (

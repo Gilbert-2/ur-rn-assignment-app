@@ -17,7 +17,7 @@ export default function App() {
       >
         <Stack.Screen name="Home" component={WelcomeScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
-        {/* <Stack.Screen name="Signup" component={SignupScreen} /> */}
+        <Stack.Screen name="Signup" component={require('./screens/Signup').default} />
         <Stack.Screen name="Qrcode" component={IndexScreen} />
       </Stack.Navigator>
     </NavigationContainer>

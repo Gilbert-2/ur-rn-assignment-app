@@ -6,6 +6,7 @@ import {
   TextInput,
   TouchableOpacity,
   Alert,
+  ScrollView,
 } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import Consistants from "../config/config";
@@ -128,31 +129,34 @@ const QrcodeScreen = ({ navigation }) => {
       });
 
     return () => {
-      Notifications.removeNotificationSubscription(
-        notificationListener.current
-      );
-      Notifications.removeNotificationSubscription(responseListener.current);
+      if (notificationListener.current) {
+        notificationListener.current.remove();
+      }
+      if (responseListener.current) {
+        responseListener.current.remove();
+      }
     };
   }, []);
   _saveQrcode = async () => {
     try {
       let data = {
-        station_id: selected ?? 1,
-        amount: state.amount,
+        station_id: Number(selected) || 1,
+        amount: Number(state.amount),
       };
+      const token = await AsyncStorage.getItem("access_token");
       const response = await Axios({
         method: "post",
-        url: `${BASE_URL}/create-qrcode`,
+        url: `${Consistants.REACT_APP_BASE_URL}/api/create-qrcode`,
         data: data,
         headers: {
-          Authorization: `Bearer ${await AsyncStorage.getItem("access_token")}`,
+          Authorization: `Bearer ${token}`,
         },
       });
       setQrcode(response.data.data.qrcode);
       resetState();
       await sendPushNotification(expoPushToken);
     } catch (error) {
-      Alert.alert("Failed to generate qrcode");
+      Alert.alert("Failed to generate qr code");
     }
   };
   const resetState = () => {
@@ -169,136 +173,213 @@ const QrcodeScreen = ({ navigation }) => {
   }, [navigation]);
 
   return (
-    <>
+    <ScrollView style={styles.scrollView}>
       {qrcode ? (
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Scan this QR Code</Text>
-          <QRCode value={qrcode} size={200} />
+        <View style={styles.qrContainer}>
+          <View style={styles.qrHeader}>
+            <Text style={styles.qrTitle}>Payment QR Code</Text>
+            <Text style={styles.qrSubtitle}>Show this to the attendant</Text>
+          </View>
+          
+          <View style={styles.qrCodeWrapper}>
+            <QRCode value={qrcode} size={250} />
+          </View>
+          
+          <TouchableOpacity 
+            style={styles.newQrButton} 
+            onPress={() => setQrcode("")}
+          >
+            <Text style={styles.newQrButtonText}>Generate New QR Code</Text>
+          </TouchableOpacity>
         </View>
       ) : (
         <View style={styles.container}>
-          <SelectList
-            setSelected={(val) => setSelected(val)}
-            data={data}
-            save="key"
-            boxStyles={styles.inputSelect}
-          />
-          <View style={styles.inputView}></View>
-
-          <View style={styles.inputView}>
-            <TextInput
-              style={styles.inputText}
-              placeholder="amount"
-              value={state.amount}
-              placeholderTextColor="#003f5c"
-              onChangeText={(text) => setState({ ...state, amount: text })}
-            />
+          <View style={styles.header}>
+            <Text style={styles.title}>Generate QR Code</Text>
+            <Text style={styles.subtitle}>Create a payment QR code for your transaction</Text>
           </View>
 
-          <TouchableOpacity onPress={_saveQrcode} style={styles.loginBtn}>
-            <Text style={styles.loginText}>Generate qrcode </Text>
-          </TouchableOpacity>
+          <View style={styles.formContainer}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Select Station</Text>
+              <SelectList
+                setSelected={(val) => setSelected(val)}
+                data={data}
+                save="key"
+                boxStyles={styles.selectBox}
+                inputStyles={styles.selectInput}
+                dropdownStyles={styles.dropdown}
+                placeholder="Choose a station"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Amount</Text>
+              <TextInput
+                style={styles.inputText}
+                placeholder="Enter amount"
+                value={state.amount}
+                placeholderTextColor="#999"
+                onChangeText={(text) => setState({ ...state, amount: text })}
+                keyboardType="numeric"
+              />
+            </View>
+
+            <TouchableOpacity onPress={_saveQrcode} style={styles.generateButton}>
+              <Text style={styles.generateButtonText}>Generate QR Code</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
-    </>
+    </ScrollView>
   );
 };
+
 const styles = StyleSheet.create({
+  scrollView: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
   container: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+    paddingHorizontal: 20,
+    paddingTop: 60,
   },
-  title: {
-    fontWeight: "bold",
-    fontSize: 27,
-    color: "green",
+  header: {
+    alignItems: 'center',
     marginBottom: 40,
   },
-  inputView: {
-    width: "80%",
-    borderRadius: 25,
-    height: 50,
-    marginBottom: 20,
-    justifyContent: "center",
-    padding: 20,
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#2E7D32',
+    marginBottom: 8,
+    textAlign: 'center',
   },
-  inputSelect: {
-    width: "80%",
-    borderTopWidth: 0,
-    borderRightWidth: 0,
-    borderLeftWidth: 0,
-    borderRadius: 0,
-    height: 50,
-    justifyContent: "center",
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  formContainer: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 25,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  inputGroup: {
+    marginBottom: 25,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  selectBox: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    backgroundColor: '#fafafa',
+  },
+  selectInput: {
+    fontSize: 16,
+    color: '#333',
+  },
+  dropdown: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 12,
+    backgroundColor: 'white',
   },
   inputText: {
-    height: 50,
-    borderBottomWidth: 1,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    fontSize: 16,
+    backgroundColor: '#fafafa',
+    color: '#333',
   },
-  forgotAndSignUpText: {
-    fontSize: 11,
+  generateButton: {
+    backgroundColor: '#2E7D32',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: 10,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-  loginBtn: {
-    width: "80%",
-    backgroundColor: "green",
-    borderRadius: 5,
-    height: 50,
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 40,
-    marginBottom: 10,
+  generateButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
-  sectionContainer: {
+  qrContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 60,
   },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: "600",
-    textAlign: "center",
+  qrHeader: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  qrTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#2E7D32',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  qrSubtitle: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+  },
+  qrCodeWrapper: {
+    backgroundColor: 'white',
+    padding: 30,
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 8,
     marginBottom: 30,
   },
-  highlight: {
-    fontWeight: "700",
+  newQrButton: {
+    backgroundColor: '#666',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 30,
+    alignItems: 'center',
   },
-  row: {
-    flexDirection: "row",
-    marginTop: 10,
-  },
-  textInput: {
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    textAlign: "center",
-    marginRight: 20,
-    marginVertical: 20,
-    borderRadius: 20,
-    width: 162,
-    borderWidth: 1,
-    borderStyle: "solid",
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: "400",
-  },
-  newButton: {
-    backgroundColor: "deepskyblue",
-    marginHorizontal: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 75,
-    borderRadius: 20,
-    paddingBottom: 17,
-  },
-  Button: {
-    backgroundColor: "deepskyblue",
-    marginTop: 32,
-    marginRight: 50,
-    paddingVertical: 10,
-    paddingHorizontal: 35,
-    borderRadius: 20,
-    paddingBottom: 17,
+  newQrButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 
