@@ -92,6 +92,8 @@ const QrcodeScreen = ({ navigation }) => {
     });
   }
   const [selected, setSelected] = React.useState("");
+  const [plateNumber, setPlateNumber] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const data = [
     { key: "1", value: "SP" },
@@ -137,12 +139,24 @@ const QrcodeScreen = ({ navigation }) => {
       }
     };
   }, []);
-  _saveQrcode = async () => {
+  const _saveQrcode = async () => {
+    if (!selected) {
+      Alert.alert("Validation Error", "Please select a station.");
+      return;
+    }
+    if (!state.amount || isNaN(state.amount) || Number(state.amount) <= 0) {
+      Alert.alert("Validation Error", "Please enter a valid amount.");
+      return;
+    }
+    setLoading(true);
     try {
       let data = {
-        station_id: Number(selected) || 1,
+        station_id: Number(selected),
         amount: Number(state.amount),
       };
+      if (plateNumber.trim()) {
+        data.plate_number = plateNumber.trim();
+      }
       const token = await AsyncStorage.getItem("access_token");
       const response = await Axios({
         method: "post",
@@ -154,9 +168,12 @@ const QrcodeScreen = ({ navigation }) => {
       });
       setQrcode(response.data.data.qrcode);
       resetState();
+      setPlateNumber("");
       await sendPushNotification(expoPushToken);
     } catch (error) {
-      Alert.alert("Failed to generate qr code");
+      Alert.alert("Failed to generate QR code", error.response?.data?.message || error.message);
+    } finally {
+      setLoading(false);
     }
   };
   const resetState = () => {
@@ -225,8 +242,21 @@ const QrcodeScreen = ({ navigation }) => {
               />
             </View>
 
-            <TouchableOpacity onPress={_saveQrcode} style={styles.generateButton}>
-              <Text style={styles.generateButtonText}>Generate QR Code</Text>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Plate Number (optional)</Text>
+              <TextInput
+                style={styles.inputText}
+                placeholder="Enter plate number"
+                value={plateNumber}
+                placeholderTextColor="#999"
+                onChangeText={setPlateNumber}
+                autoCapitalize="characters"
+                maxLength={10}
+              />
+            </View>
+
+            <TouchableOpacity onPress={_saveQrcode} style={[styles.generateButton, loading && styles.buttonDisabled]} disabled={loading}>
+              <Text style={styles.generateButtonText}>{loading ? "Generating..." : "Generate QR Code"}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -381,6 +411,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  buttonDisabled: { backgroundColor: '#ccc' },
 });
 
 export default QrcodeScreen;

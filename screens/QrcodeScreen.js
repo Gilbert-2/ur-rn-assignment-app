@@ -1,66 +1,144 @@
 import React from "react";
 import QRCode from "react-native-qrcode-svg";
-import { View, Text, StyleSheet, SafeAreaView } from "react-native";
-const QrcodeScreen = ({ route }) => {
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
+
+const QrcodeScreen = ({ route, navigation }) => {
+  const {
+    qrcode = "",
+    amount = "",
+    plate_number = "",
+    status = "PENDING",
+    station_id = "",
+    created_by = "",
+  } = route.params || {};
+
   return (
-    <View style={styles.sectionContainer}>
-      <Text style={styles.sectionTitle}>Scan the QR Code</Text>
-      <QRCode value={route.params.qr} size={200} />
-    </View>
+    <ScrollView style={styles.scrollView}>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Payment QR Code</Text>
+          <Text style={styles.subtitle}>Show this QR code to the driver for payment</Text>
+        </View>
+        <View style={styles.card}>
+          <View style={styles.qrWrapper}>
+            <QRCode value={qrcode} size={220} />
+          </View>
+          <View style={styles.detailsSection}>
+            <Text style={styles.detailLabel}>Amount:</Text>
+            <Text style={styles.detailValue}>{amount ? `RWF ${amount}` : '-'}</Text>
+            {plate_number ? (
+              <>
+                <Text style={styles.detailLabel}>Plate Number:</Text>
+                <Text style={styles.detailValue}>{plate_number}</Text>
+              </>
+            ) : null}
+            <Text style={styles.detailLabel}>Status:</Text>
+            <Text style={[styles.detailValue, status === 'PENDING' ? styles.statusPending : styles.statusCompleted]}>{status}</Text>
+          </View>
+          <View style={styles.waitingSection}>
+            <Text style={styles.waitingText}>
+              {status === 'PENDING' ? 'Waiting for driver to scan and confirm...' : 'Transaction completed!'}
+            </Text>
+          </View>
+        </View>
+        <TouchableOpacity style={styles.newQrButton} onPress={() => navigation.goBack()}>
+          <Text style={styles.newQrButtonText}>Generate New QR Code</Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   );
 };
+
 export default QrcodeScreen;
 
 const styles = StyleSheet.create({
-  sectionContainer: {
+  scrollView: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: '#f5f5f5',
   },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: "600",
-    textAlign: "center",
+  container: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    alignItems: 'center',
+  },
+  header: {
+    alignItems: 'center',
     marginBottom: 30,
   },
-  highlight: {
-    fontWeight: "700",
+  title: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#2E7D32',
+    marginBottom: 6,
+    textAlign: 'center',
   },
-  row: {
-    flexDirection: "row",
-    marginTop: 10,
+  subtitle: {
+    fontSize: 15,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 10,
   },
-  textInput: {
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    textAlign: "center",
-    marginRight: 20,
-    marginVertical: 20,
+  card: {
+    backgroundColor: 'white',
     borderRadius: 20,
-    width: 162,
-    borderWidth: 1,
-    borderStyle: "solid",
+    padding: 28,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    marginBottom: 30,
+    width: '100%',
   },
-  sectionDescription: {
-    marginTop: 8,
+  qrWrapper: {
+    marginBottom: 24,
+    alignItems: 'center',
+  },
+  detailsSection: {
+    marginBottom: 18,
+    alignItems: 'center',
+  },
+  detailLabel: {
+    fontSize: 15,
+    color: '#888',
+    fontWeight: '500',
+    marginTop: 6,
+  },
+  detailValue: {
     fontSize: 18,
-    fontWeight: "400",
+    color: '#222',
+    fontWeight: 'bold',
+    marginBottom: 2,
   },
-  newButton: {
-    backgroundColor: "deepskyblue",
-    marginHorizontal: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 75,
-    borderRadius: 20,
-    paddingBottom: 17,
+  statusPending: {
+    color: '#FFA000',
   },
-  Button: {
-    backgroundColor: "deepskyblue",
-    marginTop: 32,
-    marginRight: 50,
-    paddingVertical: 10,
-    paddingHorizontal: 35,
-    borderRadius: 20,
-    paddingBottom: 17,
+  statusCompleted: {
+    color: '#2E7D32',
+  },
+  waitingSection: {
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  waitingText: {
+    fontSize: 16,
+    color: '#2E7D32',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  newQrButton: {
+    backgroundColor: '#2E7D32',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  newQrButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });

@@ -48,7 +48,7 @@ const LoginScreen = ({ navigation }) => {
       await AsyncStorage.setItem("access_token", response.data.token);
       await AsyncStorage.setItem("user", JSON.stringify(response.data.user));
       resetState();
-      navigation.navigate("Qrcode");
+      navigation.navigate("Qrcode", { screen: "Home" });
     } catch (error) {
       Alert.alert("Error", error.response?.data?.message || error.message || "Incorrect email or password");
     } finally {
@@ -64,7 +64,7 @@ const LoginScreen = ({ navigation }) => {
   };
 
   const onPressForgotPassword = () => {
-    Alert.alert("Forgot Password", "Please contact support to reset your password.");
+    navigation.navigate("ForgotPassword");
   };
 
   const onPressSignup = () => {

@@ -2,86 +2,42 @@ import React, { useState } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Alert, TextInput } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const QRCodeScanner = () => {
+const QRCodeScanner = ({ navigation }) => {
   const [manualQRCode, setManualQRCode] = useState("");
   const [scanned, setScanned] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const sendToAPI = async (data) => {
+  // Fetch QR code details after scanning
+  const fetchQrcodeDetails = async (qrcodeString) => {
+    setLoading(true);
     try {
       const token = await AsyncStorage.getItem("access_token");
-      console.log("Sending QR code:", data, "with token:", token);
-      const response = await fetch('http://192.168.1.66:8000/api/qrcode/update', {
+      const response = await fetch('http://192.168.1.66:8000/api/qrcode/details', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
         },
-        body: JSON.stringify({ qrcode: data })
+        body: JSON.stringify({ qrcode: qrcodeString })
       });
-      
-      console.log("QR update response status:", response.status);
-      
       const responseText = await response.text();
-      console.log("Raw QR update response:", responseText);
-      
-      let result;
-      try {
-        result = JSON.parse(responseText);
-        console.log("Backend response:", result);
-        Alert.alert("Success", result.message || "QR code processed successfully");
-        setScanned(true);
-      } catch (parseError) {
-        console.log("QR update JSON parse error:", parseError);
-        Alert.alert("Error", "Server responded with non-JSON data. Status: " + response.status + "\nResponse: " + responseText.substring(0, 200));
+      let result = JSON.parse(responseText);
+      if (response.ok) {
+        navigation.navigate('ConfirmTransaction', { qrcode: qrcodeString, ...result.data });
+      } else {
+        Alert.alert("Error", result.message || "Failed to fetch QR code details");
       }
     } catch (err) {
-      console.log("Error in sendToAPI:", err);
-      Alert.alert('Error', 'Failed to process QR code: ' + err.message);
-    }
-  };
-
-  const testAPI = async () => {
-    try {
-      const token = await AsyncStorage.getItem("access_token");
-      console.log("Testing API with token:", token);
-      
-      // Test the qrcodes endpoint instead of a non-existent test endpoint
-      const response = await fetch('http://192.168.1.66:8000/api/qrcodes', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Accept': 'application/json'
-        }
-      });
-      
-      console.log("Response status:", response.status);
-      
-      const responseText = await response.text();
-      console.log("Raw response:", responseText);
-      
-      let result;
-      try {
-        result = JSON.parse(responseText);
-        console.log("Test API response:", result);
-        if (response.ok) {
-          Alert.alert("API Test", "Connection successful! Server is responding correctly.");
-        } else {
-          Alert.alert("API Test", "Server responded with status: " + response.status);
-        }
-      } catch (parseError) {
-        console.log("JSON parse error:", parseError);
-        Alert.alert("API Test", "Server responded with non-JSON data. Status: " + response.status);
-      }
-    } catch (err) {
-      console.log("Test API error:", err);
-      Alert.alert('API Test Error', 'Failed to connect: ' + err.message);
+      Alert.alert('Error', 'Failed to fetch QR code details: ' + err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleManualSubmit = () => {
     if (manualQRCode.trim()) {
-      sendToAPI(manualQRCode.trim());
+      fetchQrcodeDetails(manualQRCode.trim());
     } else {
       Alert.alert("Error", "Please enter a QR code");
     }
@@ -116,10 +72,11 @@ const QRCodeScanner = () => {
             </View>
 
             <TouchableOpacity 
-              style={styles.scanButton}
+              style={[styles.scanButton, loading && { backgroundColor: '#ccc' }]}
               onPress={handleManualSubmit}
+              disabled={loading}
             >
-              <Text style={styles.scanButtonText}>Process QR Code</Text>
+              <Text style={styles.scanButtonText}>{loading ? 'Processing...' : 'Process QR Code'}</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -137,7 +94,7 @@ const QRCodeScanner = () => {
         <View style={styles.testSection}>
           <TouchableOpacity 
             style={styles.testButton}
-            onPress={testAPI}
+            onPress={() => Alert.alert('Test', 'Test Server Connection button pressed.')}
           >
             <Text style={styles.testButtonText}>Test Server Connection</Text>
           </TouchableOpacity>

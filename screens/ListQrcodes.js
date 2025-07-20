@@ -101,7 +101,7 @@ const ListQrcodeScreen = () => {
   }, []);
 
   const renderQRCodeItem = ({ item }) => {
-    if (item.status !== "VALID") return null;
+    if (item.status !== "COMPLETED") return null;
 
     return (
       <View style={styles.qrCodeCard}>

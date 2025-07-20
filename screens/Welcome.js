@@ -5,7 +5,7 @@ export default function WelcomeScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>QR Code Manager</Text>
+        <Text style={styles.title}>Wallet System</Text>
         <Text style={styles.subtitle}>Scan • Create • Manage</Text>
       </View>
 
@@ -49,6 +49,14 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 18,
     color: '#666',
+    textAlign: 'center',
+    letterSpacing: 1,
+  },
+  walletFeature: {
+    fontSize: 18,
+    color: '#2E7D32',
+    fontWeight: 'bold',
+    marginTop: 8,
     textAlign: 'center',
     letterSpacing: 1,
   },
